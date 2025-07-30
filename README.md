@@ -1,13 +1,19 @@
-# 🛡️ MapGuard GeoTool – Dev Utility for Geolocation APIs
+# 🛡️ MapGuard GeoTool
 
-MapGuard is a lightweight developer tool to perform geocoding (address to coordinates) using **OpenStreetMap (Nominatim)**. No API keys or billing required.
+A lightweight, open-source geolocation utility built with Python and Streamlit.  
+Designed for developers, mappers, and data analysts who need quick access to geocoding tools without paying for APIs.
 
-## 🔧 Features
-- 🌍 Geocode: Get coordinates from any human-readable address
-- 📍 Map Preview: See results on an interactive map (powered by Folium)
-- ✅ Free, fast, and Streamlit deployable
+## 🌍 Features
 
-## 🚀 Run Locally
+- 📍 Geocode: Convert address to coordinates  
+- 🔁 Reverse Geocode: Coordinates to human-readable address  
+- 📏 Distance Calculator: Between two locations  
+- ⚠️ Risk Score (Simulated): Generate mock crime/environmental risk score  
+- 🗺️ Interactive maps powered by `folium`  
+- 🧠 Powered by Open APIs (Nominatim) — No key required!
+
+## 🚀 Run It Locally
+
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
