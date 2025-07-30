@@ -1,30 +1,13 @@
-# 🛡️ MapGuard GeoTool
+# 🛡️ MapGuard GeoTool – Dev Utility for Geolocation APIs
 
-**MapGuard GeoTool** is a lightweight, Python-based API toolkit built using Flask that empowers developers to perform essential geographic operations effortlessly using the Google Maps Platform. Designed for the Developer Community, this tool helps build location-aware features in apps quickly, without frontend overhead.
+MapGuard is a lightweight developer tool to perform geocoding (address to coordinates) using **OpenStreetMap (Nominatim)**. No API keys or billing required.
 
----
+## 🔧 Features
+- 🌍 Geocode: Get coordinates from any human-readable address
+- 📍 Map Preview: See results on an interactive map (powered by Folium)
+- ✅ Free, fast, and Streamlit deployable
 
-## 🚀 Features
-
-- 🌐 **Geocoding**: Convert addresses to latitude & longitude
-- 📍 **Reverse Geocoding**: Coordinates → real-world address
-- 📏 **Distance Calculator**: Haversine-based calculation between two points (in km)
-- 🤖 **Risk Score (AI mock)**: Simple score for a location (can integrate real AI later)
-
----
-
-## 🧰 Tech Stack
-
-- **Language:** Python 3
-- **Framework:** Flask
-- **APIs:** Google Maps Platform (Geocoding API)
-- **Deployment Ready:** Replit, Render, Hugging Face Spaces
-
----
-
-## 📦 Installation
-
+## 🚀 Run Locally
 ```bash
-git clone https://github.com/yourname/mapguard-geotool.git
-cd mapguard-geotool
-pip install flask requests
+pip install -r requirements.txt
+streamlit run app.py
