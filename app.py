@@ -3,19 +3,27 @@ import requests
 import folium
 from streamlit_folium import st_folium
 from geopy.distance import geodesic
+import random
 
-# --- PAGE CONFIG ---
-st.set_page_config(page_title="MapGuard GeoTool", layout="wide")
-st.title("🛡️ MapGuard GeoTool – Dev Utility for Geolocation APIs")
+# --- Streamlit Setup ---
+st.set_page_config(page_title="🛡️ MapGuard GeoTool", layout="wide")
+st.title("🛡️ MapGuard GeoTool")
+st.markdown("A developer-friendly toolkit for geolocation, reverse geocoding, distance & simulated risk scoring.")
 
-# --- SIDEBAR TOOL SELECT ---
-tool = st.sidebar.radio("Choose a Tool", ["Geocode", "Reverse Geocode", "Distance", "Risk Score"])
+# --- Sidebar Selection ---
+tool = st.sidebar.radio("Select Tool", ["Geocode", "Reverse Geocode", "Distance", "Risk Score"])
 
-# --- STATE ---
-if "geo" not in st.session_state:
-    st.session_state.geo = {"lat": None, "lon": None, "address": ""}
+# --- Session State Defaults ---
+if "geo_result" not in st.session_state:
+    st.session_state.geo_result = None
+if "reverse_result" not in st.session_state:
+    st.session_state.reverse_result = None
+if "distance_result" not in st.session_state:
+    st.session_state.distance_result = None
+if "risk_score" not in st.session_state:
+    st.session_state.risk_score = None
 
-# --- COMMON FUNCTION ---
+# --- Utility Functions ---
 def geocode_nominatim(address):
     url = "https://nominatim.openstreetmap.org/search"
     params = {"q": address, "format": "json"}
@@ -26,7 +34,7 @@ def geocode_nominatim(address):
         return float(d["lat"]), float(d["lon"])
     return None, None
 
-def reverse_geocode_nominatim(lat, lon):
+def reverse_geocode(lat, lon):
     url = "https://nominatim.openstreetmap.org/reverse"
     params = {"lat": lat, "lon": lon, "format": "json"}
     headers = {"User-Agent": "MapGuard-App"}
@@ -35,70 +43,101 @@ def reverse_geocode_nominatim(lat, lon):
         return r.json().get("display_name", "Unknown")
     return "Unknown"
 
-# --- GEOCODE ---
+# --- Geocode Tool ---
 if tool == "Geocode":
-    st.markdown("#### 📍 Geocode: Address ➝ Coordinates")
-    addr = st.text_input("Enter Address", value="Connaught Place, New Delhi, India")
+    st.subheader("📍 Geocode: Address ➝ Coordinates")
+    address = st.text_input("Enter Address", "Connaught Place, New Delhi")
     if st.button("🔍 Get Coordinates"):
-        lat, lon = geocode_nominatim(addr)
-        if lat:
-            st.session_state.geo = {"lat": lat, "lon": lon, "address": addr}
-            st.success(f"Latitude: {lat}, Longitude: {lon}")
-            m = folium.Map(location=[lat, lon], zoom_start=15)
-            folium.Marker([lat, lon], popup=addr).add_to(m)
-            st_folium(m, width=700, height=500)
+        lat, lon = geocode_nominatim(address)
+        if lat and lon:
+            st.session_state.geo_result = {
+                "lat": lat,
+                "lon": lon,
+                "address": address
+            }
         else:
-            st.error("Failed to geocode. Try a different address.")
+            st.error("❌ Failed to fetch coordinates.")
 
-# --- REVERSE GEOCODE ---
+    if st.session_state.geo_result:
+        lat = st.session_state.geo_result["lat"]
+        lon = st.session_state.geo_result["lon"]
+        address = st.session_state.geo_result["address"]
+        st.success(f"📌 Address: `{address}`\n\n🧭 Latitude: `{lat}`, Longitude: `{lon}`")
+        m = folium.Map(location=[lat, lon], zoom_start=15)
+        folium.Marker([lat, lon], popup=address).add_to(m)
+        st_folium(m, width=700, height=500)
+
+# --- Reverse Geocode Tool ---
 elif tool == "Reverse Geocode":
-    st.markdown("#### 🗺️ Reverse Geocode: Coordinates ➝ Address")
+    st.subheader("🗺️ Reverse Geocode: Coordinates ➝ Address")
     lat = st.number_input("Latitude", value=28.6328, format="%.6f")
     lon = st.number_input("Longitude", value=77.2197, format="%.6f")
     if st.button("🔁 Get Address"):
-        addr = reverse_geocode_nominatim(lat, lon)
-        st.success(f"📍 Address: {addr}")
-        m = folium.Map(location=[lat, lon], zoom_start=15)
-        folium.Marker([lat, lon], popup=addr).add_to(m)
+        address = reverse_geocode(lat, lon)
+        st.session_state.reverse_result = {
+            "lat": lat,
+            "lon": lon,
+            "address": address
+        }
+
+    if st.session_state.reverse_result:
+        result = st.session_state.reverse_result
+        st.success(f"📍 Address: `{result['address']}`")
+        m = folium.Map(location=[result["lat"], result["lon"]], zoom_start=15)
+        folium.Marker([result["lat"], result["lon"]], popup=result["address"]).add_to(m)
         st_folium(m, width=700, height=500)
 
-# --- DISTANCE ---
+# --- Distance Tool ---
 elif tool == "Distance":
-    st.markdown("#### 📏 Distance Between Two Locations")
+    st.subheader("📏 Distance Between Two Locations")
     col1, col2 = st.columns(2)
     with col1:
-        from_addr = st.text_input("From Address", "Connaught Place, New Delhi")
+        addr1 = st.text_input("From Address", "Connaught Place, New Delhi")
     with col2:
-        to_addr = st.text_input("To Address", "Red Fort, Delhi")
+        addr2 = st.text_input("To Address", "Red Fort, Delhi")
     if st.button("📐 Calculate Distance"):
-        lat1, lon1 = geocode_nominatim(from_addr)
-        lat2, lon2 = geocode_nominatim(to_addr)
+        lat1, lon1 = geocode_nominatim(addr1)
+        lat2, lon2 = geocode_nominatim(addr2)
         if lat1 and lat2:
             dist = geodesic((lat1, lon1), (lat2, lon2)).km
-            st.success(f"🛣️ Distance: {dist:.2f} km")
-            m = folium.Map(location=[(lat1+lat2)/2, (lon1+lon2)/2], zoom_start=13)
-            folium.Marker([lat1, lon1], popup="From").add_to(m)
-            folium.Marker([lat2, lon2], popup="To").add_to(m)
-            folium.PolyLine([[lat1, lon1], [lat2, lon2]], color="blue").add_to(m)
-            st_folium(m, width=700, height=500)
+            st.session_state.distance_result = {
+                "from": (lat1, lon1, addr1),
+                "to": (lat2, lon2, addr2),
+                "km": dist
+            }
         else:
-            st.error("Geocoding failed for one or both addresses.")
+            st.error("❌ Failed to geocode one or both addresses.")
 
-# --- RISK SCORE (DEMO) ---
+    if st.session_state.distance_result:
+        res = st.session_state.distance_result
+        st.success(f"🛣️ Distance between `{res['from'][2]}` and `{res['to'][2]}`: `{res['km']:.2f} km`")
+        m = folium.Map(location=[(res['from'][0] + res['to'][0]) / 2,
+                                 (res['from'][1] + res['to'][1]) / 2], zoom_start=13)
+        folium.Marker([res['from'][0], res['from'][1]], popup="From").add_to(m)
+        folium.Marker([res['to'][0], res['to'][1]], popup="To").add_to(m)
+        folium.PolyLine([[res['from'][0], res['from'][1]], [res['to'][0], res['to'][1]]],
+                        color="blue").add_to(m)
+        st_folium(m, width=700, height=500)
+
+# --- Risk Score Tool ---
 elif tool == "Risk Score":
-    st.markdown("#### ⚠️ Area Risk Score (Simulated)")
+    st.subheader("⚠️ Simulated Risk Score (Demo)")
     area = st.text_input("Enter Area Name", "Seelampur, Delhi")
-    if st.button("🚨 Get Risk Score"):
-        import random
+    if st.button("🚨 Generate Risk Score"):
         score = random.randint(1, 100)
-        if score > 75:
+        if score >= 75:
             level = "High"
             color = "red"
-        elif score > 40:
+        elif score >= 40:
             level = "Moderate"
             color = "orange"
         else:
             level = "Low"
             color = "green"
-        st.markdown(f"**🧪 Risk Score for `{area}`: `{score}` ({level})**")
-        st.progress(score / 100)
+        st.session_state.risk_score = {"area": area, "score": score, "level": level, "color": color}
+
+    if st.session_state.risk_score:
+        rs = st.session_state.risk_score
+        st.markdown(f"### 🧪 Risk for `{rs['area']}`: **{rs['score']}** / 100")
+        st.markdown(f"### 🧯 Level: **:{rs['color']}[{rs['level']}]**")
+        st.progress(rs['score'] / 100)
